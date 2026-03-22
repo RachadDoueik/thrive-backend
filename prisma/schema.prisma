@@ -12,7 +12,6 @@ model User {
   id             String             @id @default(uuid())
   fullName       String
   email          String             @unique
-  hashedPassword String
   role           Role               @default(STUDENT)
   createdAt      DateTime           @default(now())
   courses        Course[]           @relation("UserCourses")
