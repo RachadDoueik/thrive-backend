@@ -1,13 +1,124 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id             String             @id @default(uuid())
+  fullName       String
+  email          String             @unique
+  hashedPassword String
+  role           Role               @default(STUDENT)
+  createdAt      DateTime           @default(now())
+  courses        Course[]           @relation("UserCourses")
+  quizAttempts   QuizAttempt[]
+  lessonCompletions LessonCompletion[]
+  certificates   Certificate[]
+}
+
+model Course {
+  id               String             @id @default(uuid())
+  title            String
+  shortDescription String
+  longDescription  String
+  category         String
+  difficulty       String
+  thumbnail        String
+  author           User               @relation("UserCourses", fields: [authorId], references: [id])
+  authorId         String
+  createdAt        DateTime           @default(now())
+  isPublished      Boolean            @default(false)
+  lessons          Lesson[]
+  quizzes          Quiz[]
+  certificates     Certificate[]
+}
+
+model Lesson {
+  id                String             @id @default(uuid())
+  course            Course             @relation(fields: [courseId], references: [id])
+  courseId          String
+  title             String
+  content           String             @db.Text
+  videoUrl          String
+  order             Int
+  estimatedDuration Int
+  createdAt         DateTime           @default(now())
+  quizzes           Quiz[]
+  lessonCompletions LessonCompletion[]
+}
+
+model Quiz {
+  id           String        @id @default(uuid())
+  course       Course        @relation(fields: [courseId], references: [id])
+  courseId     String
+  lesson       Lesson?       @relation(fields: [lessonId], references: [id])
+  lessonId     String?
+  title        String
+  passingScore Int
+  timeLimit    Int
+  questions    Question[]
+  quizAttempts QuizAttempt[]
+}
+
+model Question {
+  id           String       @id @default(uuid())
+  quiz         Quiz         @relation(fields: [quizId], references: [id])
+  quizId       String
+  questionText String
+  questionType QuestionType
+  answers      Answer[]
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+  answerText String
+  isCorrect  Boolean
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  quizId      String
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  score       Int
+  attemptDate DateTime @default(now())
+}
+
+model LessonCompletion {
+  id            String   @id @default(uuid())
+  lesson        Lesson   @relation(fields: [lessonId], references: [id])
+  lessonId      String
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String
+  completedDate DateTime @default(now())
+}
+
+model Certificate {
+  id          String   @id @default(uuid())
+  course      Course   @relation(fields: [courseId], references: [id])
+  courseId    String
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  downloadUrl String
+  generatedAt DateTime @default(now())
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum QuestionType {
+  MCQ
+  TF
+  MSQ
 }
