@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '../../generated/prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import UserSummaryDto from './dto/user-summary-dto';
+import { Role } from 'generated/prisma/enums';
 
 @Injectable()
 export class UsersRepository {
-    constructor(private readonly prisma: PrismaClient){}
+    constructor(private readonly prisma: PrismaService){}
 
     async userById(id: string) : Promise<UserSummaryDto | null> {
         const user = await this.prisma.user.findUnique({
@@ -30,5 +31,26 @@ export class UsersRepository {
             }
         });
         return user;
+    }
+
+    async updateRoleByEmail(email: string, role: Role) : Promise<UserSummaryDto | null> {
+        try {
+            const user = await this.prisma.user.update({
+                where: { email },
+                data: { role },
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true
+                }
+            });
+            return user;
+        } catch (error: any) {
+            if (error?.code === 'P2025') {
+                return null;
+            }
+            throw error;
+        }
     }
 }
